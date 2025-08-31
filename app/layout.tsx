@@ -53,3 +53,4 @@ export default function RootLayout({
     </ClerkProvider>
   )
 }
+import 'highlight.js/styles/github-dark.css';

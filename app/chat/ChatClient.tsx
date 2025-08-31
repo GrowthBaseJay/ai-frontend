@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
+import rehypeHighlight from "rehype-highlight";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -13,20 +15,15 @@ export default function ChatClient({ userId }: { userId: string }) {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  useEffect(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, sending]);
-
-  function autosize() {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    ta.style.height = "0px";
-    ta.style.height = Math.min(ta.scrollHeight, 180) + "px";
-  }
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, sending]);
 
   async function send() {
     const text = input.trim();
     if (!text || sending) return;
+
     setInput("");
     setMessages((m) => [...m, { role: "user", content: text }]);
     setSending(true);
@@ -35,13 +32,21 @@ export default function ChatClient({ userId }: { userId: string }) {
       const res = await fetch("/api/dify-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [...messages, { role: "user", content: text }], userId }),
+        body: JSON.stringify({
+          messages: [...messages, { role: "user", content: text }],
+          userId,
+        }),
       });
+
       const data = await res.json();
-      const reply = data.reply || "Sorry, I didn’t get that.";
+      const reply: string =
+        typeof data?.reply === "string" ? data.reply : "Sorry, I didn’t get that.";
       setMessages((m) => [...m, { role: "assistant", content: reply }]);
     } catch {
-      setMessages((m) => [...m, { role: "assistant", content: "Error contacting AI." }]);
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", content: "Error contacting AI." },
+      ]);
     } finally {
       setSending(false);
     }
@@ -55,67 +60,88 @@ export default function ChatClient({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[#0b0b0b] text-[#e7e7e7]">
-      {/* Top bar */}
-      <header className="sticky top-0 z-10 border-b border-neutral-800 bg-[#0b0b0b]/80 backdrop-blur">
-        <div className="mx-auto max-w-3xl h-14 px-4 flex items-center justify-between">
+    <div className="min-h-screen bg-black text-white flex flex-col">
+      {/* Header */}
+      <header className="sticky top-0 z-10 h-14 border-b border-neutral-800 bg-black/80 backdrop-blur flex items-center justify-center px-4">
+        <div className="w-full max-w-3xl flex items-center justify-between">
           <div className="font-semibold tracking-tight">GrowthBase AI</div>
+          <div className="text-xs text-neutral-400">Signed in</div>
         </div>
       </header>
 
       {/* Messages */}
-      <main className="mx-auto max-w-3xl px-4 pb-36 pt-6">
-        {messages.map((m, i) => {
-          const isUser = m.role === "user";
-          return (
-            <div key={i} className={`mb-6 flex ${isUser ? "justify-end" : "justify-start"}`}>
+      <main className="flex-1 w-full">
+        <div className="mx-auto w-full max-w-3xl px-4 py-6">
+          {messages.map((m, i) => {
+            const isUser = m.role === "user";
+            return (
               <div
-                className={`rounded-2xl px-4 py-3 leading-relaxed max-w-[85%] prose prose-invert prose-p:my-2 prose-pre:my-3 prose-pre:bg-neutral-900 prose-code:before:hidden prose-code:after:hidden
-                  ${isUser ? "bg-neutral-900 border border-neutral-800" : "bg-neutral-800/60 border border-neutral-700"}
-                `}
+                key={i}
+                className={`mb-5 flex ${isUser ? "justify-end" : "justify-start"}`}
               >
-                {isUser ? (
-                  <div className="whitespace-pre-wrap">{m.content}</div>
-                ) : (
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {m.content}
-                  </ReactMarkdown>
-                )}
+                <div
+                  className={`max-w-[700px] rounded-2xl px-4 py-3 leading-relaxed ${
+                    isUser
+                      ? "bg-neutral-900 text-neutral-100 border border-neutral-800"
+                      : "bg-neutral-800/70 text-neutral-100 border border-neutral-700"
+                  }`}
+                >
+                  {/* Role label */}
+                  <div
+                    className={`text-[10px] uppercase tracking-wide mb-2 ${
+                      isUser ? "text-blue-300" : "text-emerald-300"
+                    }`}
+                  >
+                    {isUser ? "You" : "Assistant"}
+                  </div>
+
+                  {/* Markdown content */}
+                  <div className="prose prose-invert prose-pre:bg-transparent prose-pre:p-0 prose-code:before:hidden prose-code:after:hidden">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      rehypePlugins={[rehypeRaw, rehypeHighlight]}
+                    >
+                      {m.content}
+                    </ReactMarkdown>
+                  </div>
+                </div>
               </div>
+            );
+          })}
+
+          {sending && (
+            <div className="mb-5 flex justify-start">
+              <div className="text-sm text-neutral-400">Thinking…</div>
             </div>
-          );
-        })}
-        {sending && <div className="text-sm text-neutral-400">Thinking…</div>}
-        <div ref={bottomRef} />
+          )}
+
+          <div ref={bottomRef} />
+        </div>
       </main>
 
-      {/* Composer */}
-      <footer className="fixed bottom-0 left-0 right-0 border-t border-neutral-800 bg-[#0b0b0b]/80 backdrop-blur">
-        <div className="mx-auto max-w-3xl px-4 py-3">
-          <div className="flex items-end gap-2">
+      {/* Input bar */}
+      <footer className="sticky bottom-0 bg-black border-t border-neutral-800">
+        <div className="mx-auto w-full max-w-3xl px-4 py-3">
+          <div className="rounded-2xl border border-neutral-800 bg-neutral-950 focus-within:border-neutral-600 transition">
             <textarea
-              ref={textareaRef}
-              className="flex-1 resize-none rounded-xl border border-neutral-800 bg-neutral-950 px-3 py-2 outline-none placeholder:text-neutral-500"
-              placeholder="Type a message…"
-              value={input}
-              onChange={(e) => {
-                setInput(e.target.value);
-                autosize();
-              }}
-              onKeyDown={onKeyDown}
+              className="w-full resize-none bg-transparent outline-none text-sm placeholder-neutral-500 px-4 py-3"
               rows={1}
-              spellCheck
+              placeholder="Type a message… (Enter to send, Shift+Enter for a new line)"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={onKeyDown}
               disabled={sending}
             />
+          </div>
+          <div className="mt-2 flex justify-end">
             <button
               onClick={send}
-              disabled={sending || !input.trim()}
-              className="rounded-xl bg-white text-black px-4 py-2 text-sm font-medium disabled:opacity-60"
+              disabled={sending}
+              className="h-9 px-4 rounded-xl bg-white text-black text-sm font-medium disabled:opacity-60"
             >
               Send
             </button>
           </div>
-          <div className="mt-2 text-[11px] text-neutral-500">Press Enter to send · Shift+Enter for a new line</div>
         </div>
       </footer>
     </div>
