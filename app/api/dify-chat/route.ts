@@ -44,7 +44,8 @@ export async function POST(req: Request) {
     const text = data.answer ?? data.output_text ?? JSON.stringify(data);
 
     return NextResponse.json({ reply: text });
-  } catch (err: any) {
-    return NextResponse.json({ error: err?.message || "Server error" }, { status: 500 });
-  }
+// ...rest of file above stays the same
+} catch (err) {
+  const message = err instanceof Error ? err.message : "Server error";
+  return NextResponse.json({ error: message }, { status: 500 });
 }

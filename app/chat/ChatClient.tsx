@@ -31,8 +31,11 @@ export default function ChatClient({ userId }: { userId: string }) {
       const data = await res.json();
       const reply = data.reply || "Sorry, I didn’t get that.";
       setMessages((m) => [...m, { role: "assistant", content: reply }]);
-    } catch (e: any) {
-      setMessages((m) => [...m, { role: "assistant", content: "Error contacting AI." }]);
+    // ...inside send()
+} catch {
+  setMessages((m) => [...m, { role: "assistant", content: "Error contacting AI." }]);
+} finally {
+  setSending(false);
     } finally {
       setSending(false);
     }
