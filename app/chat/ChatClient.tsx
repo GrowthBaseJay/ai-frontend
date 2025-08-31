@@ -19,23 +19,28 @@ export default function ChatClient({ userId }: { userId: string }) {
   async function send() {
     const text = input.trim();
     if (!text || sending) return;
+
     setInput("");
     setMessages((m) => [...m, { role: "user", content: text }]);
     setSending(true);
+
     try {
       const res = await fetch("/api/dify-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: [...messages, { role: "user", content: text }], userId }),
+        body: JSON.stringify({
+          messages: [...messages, { role: "user", content: text }],
+          userId,
+        }),
       });
       const data = await res.json();
       const reply = data.reply || "Sorry, I didn’t get that.";
       setMessages((m) => [...m, { role: "assistant", content: reply }]);
-    // ...inside send()
-} catch {
-  setMessages((m) => [...m, { role: "assistant", content: "Error contacting AI." }]);
-} finally {
-  setSending(false);
+    } catch {
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", content: "Error contacting AI." },
+      ]);
     } finally {
       setSending(false);
     }
@@ -57,17 +62,23 @@ export default function ChatClient({ userId }: { userId: string }) {
       <section className="flex-1 w-full max-w-3xl mx-auto px-4 py-4 overflow-y-auto">
         {messages.map((m, i) => (
           <div key={i} className="mb-4">
-            <div className={`text-xs uppercase tracking-wide mb-1 ${m.role === "user" ? "text-blue-300" : "text-emerald-300"}`}>
+            <div
+              className={`text-xs uppercase tracking-wide mb-1 ${
+                m.role === "user" ? "text-blue-300" : "text-emerald-300"
+              }`}
+            >
               {m.role}
             </div>
-            <div className={`rounded-2xl p-3 ${m.role === "user" ? "bg-neutral-900" : "bg-neutral-800"}`}>
+            <div
+              className={`rounded-2xl p-3 ${
+                m.role === "user" ? "bg-neutral-900" : "bg-neutral-800"
+              }`}
+            >
               {m.content}
             </div>
           </div>
         ))}
-        {sending && (
-          <div className="mb-4 text-neutral-400 text-sm">Thinking…</div>
-        )}
+        {sending && <div className="mb-4 text-neutral-400 text-sm">Thinking…</div>}
         <div ref={bottomRef} />
       </section>
 
