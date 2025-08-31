@@ -50,3 +50,6 @@ html {
 .prose code {
   background: transparent;
 }
+.prose p { margin: 0.5rem 0; }
+.prose li { margin: 0.25rem 0; }
+.prose code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace; }
