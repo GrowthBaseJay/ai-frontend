@@ -45,6 +45,11 @@ function clsx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
 }
 
+// type guard to avoid `any`
+function isAbortError(e: unknown): e is { name?: string } {
+  return typeof e === "object" && e !== null && "name" in e && (e as { name?: string }).name === "AbortError";
+}
+
 /* --------------------------------- Page --------------------------------- */
 
 export default function ChatClient({ userId }: { userId: string }) {
@@ -59,12 +64,11 @@ export default function ChatClient({ userId }: { userId: string }) {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  // auto-scroll to newest
+  // auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, sending]);
 
-  // composer rows (auto-grow 1–8)
   const rows = useMemo(() => {
     const lines = input.split("\n").length;
     return Math.max(1, Math.min(8, lines));
@@ -74,18 +78,15 @@ export default function ChatClient({ userId }: { userId: string }) {
     const text = input.trim();
     if (!text || sending) return;
 
-    // optimistic user message
     const userMsg: Msg = { id: uid(), role: "user", content: text, createdAt: now() };
     setInput("");
     setMessages(m => [...m, userMsg]);
     setSending(true);
 
-    // try streaming first; if not supported, fall back to blocking
     abortRef.current = new AbortController();
     const signal = abortRef.current.signal;
 
     try {
-      // Attempt SSE streaming (server may or may not support this)
       const streamUrl = "/api/dify-chat?stream=1";
       const res = await fetch(streamUrl, {
         method: "POST",
@@ -101,7 +102,6 @@ export default function ChatClient({ userId }: { userId: string }) {
       const hasBody = !!res.body;
 
       if (isSSE && hasBody) {
-        // Add empty assistant msg we’ll fill as tokens arrive
         const asstId = uid();
         setMessages(m => [...m, { id: asstId, role: "assistant", content: "", createdAt: now() }]);
 
@@ -113,34 +113,28 @@ export default function ChatClient({ userId }: { userId: string }) {
           done = chunk.done;
           const text = decoder.decode(chunk.value || new Uint8Array(), { stream: !done });
           if (!text) continue;
-
-          // Dify SSE usually sends lines with `data: {...}` or plain text chunks.
-          // We’ll append raw text; server proxy can normalize later.
           setMessages(m =>
             m.map(msg => (msg.id === asstId ? { ...msg, content: msg.content + text } : msg)),
           );
         }
       } else {
-        // Fallback: blocking JSON (your current server behavior). Typewriter the reply for vibes.
         const data = await res.json().catch(() => ({}));
         const reply = (data && (data.reply || data.answer || data.output_text)) || "Sorry, I didn’t get that.";
 
         const asstId = uid();
         setMessages(m => [...m, { id: asstId, role: "assistant", content: "", createdAt: now() }]);
 
-        // simple typewriter effect
         const step = Math.max(1, Math.floor(reply.length / 60));
         for (let i = 0; i < reply.length; i += step) {
-          await new Promise(r => setTimeout(r, 16)); // ~60fps
+          await new Promise(r => setTimeout(r, 16));
           const slice = reply.slice(i, i + step);
           setMessages(m =>
             m.map(msg => (msg.id === asstId ? { ...msg, content: msg.content + slice } : msg)),
           );
         }
       }
-    } catch (err) {
-      if ((err as any)?.name === "AbortError") {
-        // user hit Stop
+    } catch (err: unknown) {
+      if (isAbortError(err)) {
         setMessages(m => [...m, { id: uid(), role: "assistant", content: "…stopped.", createdAt: now() }]);
       } else {
         setMessages(m => [...m, { id: uid(), role: "assistant", content: "Network error contacting AI.", createdAt: now() }]);
@@ -166,7 +160,6 @@ export default function ChatClient({ userId }: { userId: string }) {
     setMessages([{ id: uid(), role: "assistant", content: "New chat. How can I help?", createdAt: now() }]);
   }
 
-  // Build an array with day dividers inserted
   const withDividers: (Msg | { divider: true; label: string; key: string })[] = [];
   let lastDay = "";
   for (const m of messages) {
