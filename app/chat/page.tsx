@@ -6,5 +6,6 @@ import ChatClient from "./ChatClient";
 export default async function ChatPage() {
   const { userId } = await auth();
   if (!userId) redirect("/sign-in");
+
   return <ChatClient userId={userId} />;
 }
