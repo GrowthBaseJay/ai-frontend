@@ -1,127 +1,79 @@
 "use client";
 
+import Link from "next/link";
+import { RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, Plus, Check, X } from "lucide-react";
-import { loadConversations, saveConversations, clsx } from "../lib/utils";
 import type { Conversation } from "../lib/types";
+import { clsx, loadConversations } from "../lib/utils";
 import ModelPicker from "./ModelPicker";
 
-export default function Sidebar() {
+export default function Sidebar({
+  currentId,
+  onSelect,
+  onNewChat,
+  onDelete,
+}: {
+  currentId: string | null;
+  onSelect: (id: string) => void;
+  onNewChat: () => void;
+  onDelete: (id: string) => void;
+}) {
   const [convs, setConvs] = useState<Conversation[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState("");
 
-  useEffect(() => { setConvs(loadConversations()); }, []);
-  useEffect(() => { if (convs.length) saveConversations(convs); }, [convs]);
-
-  function newChat() {
-    const now = Date.now();
-    const convo: Conversation = {
-      id: crypto.randomUUID(),
-      title: "New chat",
-      createdAt: now,
-      updatedAt: now,
-      messages: [],
-    };
-    const next = [convo, ...convs];
-    setConvs(next);
-    saveConversations(next);
-    // navigation is handled in ChatClient by recently updated sort
-  }
-
-  function startEdit(id: string, title: string) {
-    setEditingId(id);
-    setDraft(title);
-  }
-  function cancelEdit() {
-    setEditingId(null);
-    setDraft("");
-  }
-  function commitEdit(id: string) {
-    setConvs((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, title: draft || "Untitled", updatedAt: Date.now() } : c))
-    );
-    cancelEdit();
-  }
-  function remove(id: string) {
-    if (!confirm("Delete this conversation?")) return;
-    setConvs((prev) => prev.filter((c) => c.id !== id));
-  }
+  useEffect(() => {
+    setConvs(loadConversations().sort((a, b) => b.updatedAt - a.updatedAt));
+    // you can add a storage listener if you update from other tabs
+  }, []);
 
   return (
-    <aside className="hidden lg:block">
-      <div
-        className="fixed left-0 top-14 z-40 h-[calc(100dvh-56px)] w-72 border-r border-[color:var(--gb-border)]/60 bg-[var(--gb-bg)]"
-        aria-label="sidebar"
-      >
-        <div className="flex h-full flex-col">
-          {/* Top */}
-          <div className="border-b border-[color:var(--gb-border)]/60 p-3">
-            <button
-              onClick={newChat}
-              className="flex w-full items-center justify-center gap-2 rounded-md border border-[color:var(--gb-border)]/60 px-3 py-2 text-sm hover:border-[color:var(--gb-accent)]/70"
-            >
-              <Plus className="h-4 w-4" />
-              New chat
-            </button>
-          </div>
+    <aside className="hidden lg:flex lg:flex-col lg:w-72 shrink-0 border-r border-[color:var(--gb-border)] bg-[var(--gb-bg)]">
+      <div className="h-14 px-3 flex items-center justify-between border-b border-[color:var(--gb-border)]">
+        <div className="text-sm text-[color:var(--gb-subtle)]">Conversations</div>
+        <button
+          onClick={onNewChat}
+          className="text-xs px-2 py-1 rounded border border-[color:var(--gb-border)] hover:bg-[color:var(--gb-surface-2)]"
+          title="New chat"
+        >
+          <RotateCcw className="inline-block h-3.5 w-3.5 mr-1" />
+          New
+        </button>
+      </div>
 
-          {/* List */}
-          <div className="min-h-0 flex-1 overflow-y-auto p-2 space-y-1">
-            {convs.length === 0 && (
-              <div className="text-sm text-[color:var(--gb-subtle)]">Conversations will appear here</div>
+      <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
+        {convs.map((c) => (
+          <div
+            key={c.id}
+            className={clsx(
+              "group rounded-lg border px-2 py-2 cursor-pointer",
+              c.id === currentId
+                ? "border-[color:var(--gb-border)] bg-[color:var(--gb-surface-2)]"
+                : "border-[color:var(--gb-border)]/40 hover:bg-[color:var(--gb-surface)]"
             )}
-            {convs.map((c) => (
-              <div
-                key={c.id}
-                className={clsx(
-                  "group flex items-center justify-between rounded-md border border-transparent px-2 py-2 hover:border-[color:var(--gb-border)]/60"
-                )}
+            onClick={() => onSelect(c.id)}
+          >
+            <div className="text-[13px] truncate">{c.title || "Untitled"}</div>
+            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition">
+              <button
+                className="text-[11px] text-[color:var(--gb-subtle)] hover:text-[color:var(--gb-text)]"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(c.id);
+                }}
+                title="Delete"
               >
-                {editingId === c.id ? (
-                  <input
-                    autoFocus
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") commitEdit(c.id); if (e.key === "Escape") cancelEdit(); }}
-                    className="w-full rounded-sm bg-transparent outline-none"
-                    aria-label="Conversation title"
-                  />
-                ) : (
-                  <div className="truncate text-[13px]" title={c.title}>
-                    {c.title || "Untitled"}
-                  </div>
-                )}
-                <div className="ml-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-                  {editingId === c.id ? (
-                    <>
-                      <button className="rounded p-1 hover:bg-[color:var(--gb-surface)]" onClick={() => commitEdit(c.id)} aria-label="Save name">
-                        <Check className="h-4 w-4" />
-                      </button>
-                      <button className="rounded p-1 hover:bg-[color:var(--gb-surface)]" onClick={cancelEdit} aria-label="Cancel rename">
-                        <X className="h-4 w-4" />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button className="rounded p-1 hover:bg-[color:var(--gb-surface)]" onClick={() => startEdit(c.id, c.title)} aria-label="Rename">
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button className="rounded p-1 hover:bg-[color:var(--gb-surface)]" onClick={() => remove(c.id)} aria-label="Delete">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
+                Delete
+              </button>
+            </div>
           </div>
+        ))}
+        {convs.length === 0 && (
+          <div className="text-xs text-[color:var(--gb-subtle)] px-2">No chats yet</div>
+        )}
+      </div>
 
-          {/* Bottom model picker */}
-          <div className="border-t border-[color:var(--gb-border)]/60 p-3 text-sm">
-            <ModelPicker />
-          </div>
-        </div>
+      {/* SSR-safe model selector lives in the footer */}
+      <div className="p-3 border-t border-[color:var(--gb-border)]">
+        <ModelPicker />
       </div>
     </aside>
   );

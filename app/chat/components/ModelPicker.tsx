@@ -9,12 +9,20 @@ const MODELS = [
 ];
 
 export default function ModelPicker() {
-  const [model, setModel] = useState<string>(() => localStorage.getItem("gb-model") || MODELS[0].id);
+  const [model, setModel] = useState<string>(MODELS[0].id);
 
   useEffect(() => {
-    localStorage.setItem("gb-model", model);
-    // optional: fire a custom event so ChatClient can read it if needed
-    window.dispatchEvent(new CustomEvent("gb:model", { detail: model }));
+    try {
+      const saved = window.localStorage.getItem("gb-model");
+      if (saved) setModel(saved);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("gb-model", model);
+      window.dispatchEvent(new CustomEvent("gb:model", { detail: model }));
+    } catch {}
   }, [model]);
 
   return (
