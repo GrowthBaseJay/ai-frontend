@@ -224,7 +224,7 @@ export default function ChatClient({ userId }: { userId: string }) {
     <div className="relative flex min-h-0 flex-1 flex-col">
       {/* THREAD (pad for fixed composer height) */}
       <section className="flex-1 overflow-y-auto pb-40">
-        <div className="mx-auto w-full max-w-[1000px] px-4 md:px-6 py-4 space-y-4">
+        <div className="mx-auto w-full max-w-[1000px] px-0 py-4 space-y-4">
           {current ? (
             <>
               {items.map((item) =>
