@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { SendHorizontal, StopCircle, ArrowDown } from "lucide-react";
+import { SendHorizontal, StopCircle, ArrowDown, RotateCcw } from "lucide-react";
 import type { Conversation, Msg } from "./lib/types";
 import {
   uid,
@@ -15,15 +15,13 @@ import {
   saveConversations,
 } from "./lib/utils";
 
-import ChatRow from "./components/ChatRow";
 import DayDivider from "./components/DayDivider";
+import ChatRow from "./components/ChatRow";
 
 export default function ChatClient({ userId }: { userId: string }) {
   const { user } = useUser();
   const you = initialsFrom(
-    user?.fullName ??
-      user?.username ??
-      user?.primaryEmailAddress?.emailAddress
+    user?.fullName ?? user?.username ?? user?.primaryEmailAddress?.emailAddress
   );
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -37,31 +35,13 @@ export default function ChatClient({ userId }: { userId: string }) {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  /* ----------------------- SSR-safe model selection ----------------------- */
-  // Default model; hydrate from localStorage on the client only and sync with ModelPicker.
-  const [model, setModel] = useState<string>("gpt-4o-mini");
-  useEffect(() => {
-    function hydrate() {
-      try {
-        const saved = window.localStorage.getItem("gb-model");
-        if (saved) setModel(saved);
-      } catch {
-        /* ignore */
-      }
-    }
-    hydrate();
+  // model from localStorage (Sidebar writes it; read defensively)
+  const model =
+    typeof window !== "undefined"
+      ? window.localStorage.getItem("gb-model") || "gpt-4o-mini"
+      : "gpt-4o-mini";
 
-    // Listen for broadcasts from ModelPicker
-    const onModel = (e: Event) => {
-      const detail = (e as CustomEvent<string>).detail;
-      if (typeof detail === "string") setModel(detail);
-    };
-    window.addEventListener("gb:model", onModel as EventListener);
-    return () => window.removeEventListener("gb:model", onModel as EventListener);
-  }, []);
-  /* ----------------------------------------------------------------------- */
-
-  // mount: load conversations
+  /* --------------------------- Conversations init -------------------------- */
   useEffect(() => {
     const convs = loadConversations();
     if (convs.length === 0) {
@@ -90,39 +70,28 @@ export default function ChatClient({ userId }: { userId: string }) {
     }
   }, []);
 
-  // find current
-  const current = conversations.find((c) => c.id === currentId);
+  const current = conversations.find((c) => c.id === currentId) || null;
 
-  // autoscroll
+  /* -------------------------------- Autoscroll ----------------------------- */
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [currentId, current?.messages.length, sending]);
 
-  // show "jump to latest" when scrolled up — TS-safe
   useEffect(() => {
     const el = threadRef.current;
-    if (!el) return; // runtime guard
-
-    // non-null alias for TS
+    if (!el) return;
     const target: HTMLDivElement = el;
-
     const onScroll = () => {
       const nearBottom =
         target.scrollHeight - target.scrollTop - target.clientHeight < 120;
       setShowJump(!nearBottom);
     };
-
-    onScroll(); // initialize once
-
-    target.addEventListener("scroll", onScroll, {
-      passive: true,
-    } as AddEventListenerOptions);
-    return () => {
-      target.removeEventListener("scroll", onScroll);
-    };
+    onScroll();
+    target.addEventListener("scroll", onScroll, { passive: true } as AddEventListenerOptions);
+    return () => target.removeEventListener("scroll", onScroll);
   }, []);
 
-  // persist conversations
+  /* ------------------------------ Persistence ------------------------------ */
   useEffect(() => {
     if (conversations.length) saveConversations(conversations);
   }, [conversations]);
@@ -144,7 +113,6 @@ export default function ChatClient({ userId }: { userId: string }) {
     });
   }
 
-  // If you no longer call newChat() from UI, you can remove this to silence ESLint “unused” warnings.
   function newChat() {
     const convo: Conversation = {
       id: uid(),
@@ -162,6 +130,32 @@ export default function ChatClient({ userId }: { userId: string }) {
     setInput("");
   }
 
+  function selectChat(id: string) {
+    setCurrentId(id);
+  }
+
+  function deleteChat(id: string) {
+    setConversations((prev) => {
+      const next = prev.filter((c) => c.id !== id);
+      if (next.length === 0) {
+        const convo: Conversation = {
+          id: uid(),
+          title: "New chat",
+          createdAt: now(),
+          updatedAt: now(),
+          messages: [],
+        };
+        saveConversations([convo]);
+        setCurrentId(convo.id);
+        return [convo];
+      }
+      saveConversations(next);
+      if (id === currentId) setCurrentId(next[0].id);
+      return next;
+    });
+  }
+
+  /* --------------------------------- Send ---------------------------------- */
   async function send() {
     if (!current) return;
     const text = input.trim();
@@ -190,7 +184,7 @@ export default function ChatClient({ userId }: { userId: string }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model, // pass the hydrated model
+          model,
           messages: [...current.messages, userMsg].map(({ role, content }) => ({
             role,
             content,
@@ -303,12 +297,11 @@ export default function ChatClient({ userId }: { userId: string }) {
       void send();
     }
   }
-
   function stop() {
     abortRef.current?.abort();
   }
 
-  // Build message list with day dividers (labels only)
+  /* -------------------- Build message list with day dividers ------------------- */
   const items: (Msg | { divider: true; label: string; key: string })[] = [];
   if (current) {
     let lastDay = "";
@@ -323,96 +316,147 @@ export default function ChatClient({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
-      {/* THREAD */}
-      <section ref={threadRef} className="flex-1 overflow-y-auto pb-40">
-        <div className="mx-auto w-full max-w-[980px] px-4 md:px-6 py-4">
-          {/* Empty state */}
-          {current?.messages.length === 0 && (
-            <div className="mb-6 text-[color:var(--gb-subtle)]">
-              <div>Try things like:</div>
-              <ul className="list-disc pl-5">
-                <li>“Draft a DM to re-engage past clients.”</li>
-                <li>“List 5 hooks to promote my 30-day accelerator.”</li>
-              </ul>
-            </div>
-          )}
-
-          {/* Messages */}
-          <div className="space-y-5">
-            {items.map((item) =>
-              "divider" in item ? (
-                <DayDivider key={item.key} label={item.label} />
-              ) : (
-                <ChatRow key={item.id} you={you} msg={item} />
-              )
-            )}
-            <div ref={bottomRef} />
-          </div>
-        </div>
-
-        {/* Jump to latest */}
-        {showJump && (
+    <div className="flex min-h-0 flex-1">
+      {/* SIDEBAR (desktop) */}
+      <aside className="hidden lg:flex lg:w-72 lg:flex-col shrink-0 border-r border-[color:var(--gb-border)] bg-[var(--gb-bg)]">
+        <div className="h-14 px-3 flex items-center justify-between border-b border-[color:var(--gb-border)]">
+          <div className="text-sm text-[color:var(--gb-subtle)]">Conversations</div>
           <button
-            onClick={() =>
-              bottomRef.current?.scrollIntoView({ behavior: "smooth" })
-            }
-            className="fixed bottom-24 right-6 rounded-full border border-[color:var(--gb-border)]/60 bg-[color:var(--gb-surface)] px-3 py-1.5 text-xs text-[color:var(--gb-text)] shadow"
-            aria-label="Jump to latest"
+            onClick={newChat}
+            className="text-xs px-2 py-1 rounded border border-[color:var(--gb-border)] hover:bg-[color:var(--gb-surface-2)]"
+            title="New chat"
           >
-            <span className="inline-flex items-center gap-1">
-              <ArrowDown className="h-4 w-4" /> Jump to latest
-            </span>
+            <RotateCcw className="inline-block h-3.5 w-3.5 mr-1" />
+            New
           </button>
-        )}
-      </section>
+        </div>
+        <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
+          {conversations.map((c) => (
+            <div
+              key={c.id}
+              className={clsx(
+                "group rounded-lg border px-2 py-2 cursor-pointer",
+                c.id === currentId
+                  ? "border-[color:var(--gb-border)] bg-[color:var(--gb-surface-2)]"
+                  : "border-[color:var(--gb-border)]/40 hover:bg-[color:var(--gb-surface)]"
+              )}
+              onClick={() => selectChat(c.id)}
+            >
+              <div className="text-[13px] truncate">{c.title || "Untitled"}</div>
+              <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition">
+                <button
+                  className="text-[11px] text-[color:var(--gb-subtle)] hover:text-[color:var(--gb-text)]"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteChat(c.id);
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+          {conversations.length === 0 && (
+            <div className="text-xs text-[color:var(--gb-subtle)] px-2">No chats yet</div>
+          )}
+        </div>
+        <div className="p-3 border-t border-[color:var(--gb-border)]">
+          {/* Model picker spot (we’ll wire the real component next) */}
+          <div className="text-[13px] text-[color:var(--gb-subtle)]">Model: (coming soon)</div>
+        </div>
+      </aside>
 
-      {/* COMPOSER — fixed, no gray line */}
-      <footer className="fixed bottom-0 right-0 left-0 lg:left-72 bg-[var(--gb-bg)]">
-        <div className="mx-auto w-full max-w-[980px] px-4 py-3">
-          <div className="rounded-xl bg-[color:var(--gb-surface)] border border-[color:var(--gb-border)]/80 p-2">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={onKeyDown}
-              rows={rows}
-              placeholder="Message GrowthBase AI"
-              className="w-full resize-none bg-transparent outline-none text-[17px] leading-7 placeholder:text-[color:var(--gb-subtle)] text-[color:var(--gb-text)]"
-              disabled={sending || !current}
-              aria-label="Message input"
-            />
-            <div className="flex items-center justify-end gap-2 pt-2">
-              {sending && (
+      {/* THREAD COLUMN */}
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        <section ref={threadRef} className="flex-1 overflow-y-auto pb-40">
+          <div className="mx-auto w-full max-w-[980px] px-4 md:px-6 py-4">
+            {/* Empty state */}
+            {current?.messages.length === 0 && (
+              <div className="mb-6 text-[color:var(--gb-subtle)]">
+                <div>Try things like:</div>
+                <ul className="list-disc pl-5">
+                  <li>“Draft a DM to re-engage past clients.”</li>
+                  <li>“List 5 hooks to promote my 30-day accelerator.”</li>
+                </ul>
+              </div>
+            )}
+
+            {/* Messages */}
+            <div className="space-y-5">
+              {items.map((item) =>
+                "divider" in item ? (
+                  <DayDivider key={item.key} label={item.label} />
+                ) : (
+                  <ChatRow key={item.id} you={you} msg={item} />
+                )
+              )}
+              <div ref={bottomRef} />
+            </div>
+          </div>
+
+          {/* Jump to latest */}
+          {showJump && (
+            <button
+              onClick={() =>
+                bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+              }
+              className="fixed bottom-24 right-6 rounded-full border border-[color:var(--gb-border)]/60 bg-[color:var(--gb-surface)] px-3 py-1.5 text-xs text-[color:var(--gb-text)] shadow"
+              aria-label="Jump to latest"
+            >
+              <span className="inline-flex items-center gap-1">
+                <ArrowDown className="h-4 w-4" /> Jump to latest
+              </span>
+            </button>
+          )}
+        </section>
+
+        {/* COMPOSER — fixed, aligned with thread; offset only when sidebar is present */}
+        <footer className="fixed bottom-0 left-0 right-0 lg:left-72 bg-[var(--gb-bg)]">
+          <div className="mx-auto w-full max-w-[980px] px-4 py-3">
+            <div className="rounded-xl bg-[color:var(--gb-surface)] border border-[color:var(--gb-border)]/80 p-2">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={onKeyDown}
+                rows={rows}
+                placeholder="Message GrowthBase AI"
+                className="w-full resize-none bg-transparent outline-none text-[17px] leading-7 placeholder:text-[color:var(--gb-subtle)] text-[color:var(--gb-text)]"
+                disabled={sending || !current}
+                aria-label="Message input"
+              />
+              <div className="flex items-center justify-end gap-2 pt-2">
+                {sending && (
+                  <button
+                    type="button"
+                    onClick={stop}
+                    className="inline-flex items-center gap-1 rounded-lg border border-[color:var(--gb-border)]/80 px-3 py-1.5 text-xs hover:bg-[color:var(--gb-surface-2)]"
+                    aria-label="Stop generating"
+                  >
+                    <StopCircle className="h-4 w-4" />
+                    Stop
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={stop}
-                  className="inline-flex items-center gap-1 rounded-lg border border-[color:var(--gb-border)]/80 px-3 py-1.5 text-xs hover:bg-[color:var(--gb-surface-2)]"
-                  aria-label="Stop generating"
+                  onClick={async () => await send()}
+                  disabled={!input.trim() || sending || !current}
+                  className={clsx(
+                    "inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs",
+                    input.trim() && !sending
+                      ? "bg-[color:var(--gb-accent)] text-black hover:brightness-110"
+                      : "bg-[color:var(--gb-surface-2)] text-[color:var(--gb-subtle)] cursor-not-allowed"
+                  )}
+                  aria-label="Send message"
+                  title="Send"
                 >
-                  <StopCircle className="h-4 w-4" />
-                  Stop
+                  <SendHorizontal className="h-4 w-4" />
+                  Send
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={async () => await send()}
-                disabled={!input.trim() || sending || !current}
-                className={clsx(
-                  "inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs",
-                  input.trim() && !sending
-                    ? "bg-[color:var(--gb-accent)] text-black hover:brightness-110"
-                    : "bg-[color:var(--gb-surface-2)] text-[color:var(--gb-subtle)] cursor-not-allowed"
-                )}
-                aria-label="Send message"
-                title="Send"
-              >
-                <SendHorizontal className="h-4 w-4" />
-                Send
-              </button>
+              </div>
             </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 }
