@@ -331,11 +331,11 @@ export default function ChatClient({ userId }: { userId: string }) {
     <div className="min-h-screen max-h-screen bg-[var(--gb-bg)] text-[var(--gb-text)] flex">
       {/* Sidebar (hidden on small screens) */}
       <aside className={clsx(
-        "hidden md:flex md:flex-col w-64 border-r border-[var(--gb-border)] bg-[color:var(--gb-bg)]/60 backdrop-blur",
+        "hidden md:flex md:flex-col w-64 border-r border-[var(--gb-border)] bg-[var(--gb-bg)]/60 backdrop-blur",
         "shrink-0"
       )}>
         <div className="h-12 px-3 flex items-center justify-between border-b border-[var(--gb-border)]">
-          <div className="text-xs text-[color:var(--gb-subtle)]">Conversations</div>
+          <div className="text-xs text-[var(--gb-subtle)]">Conversations</div>
           <button
             onClick={newChat}
             className="text-xs px-2 py-1 rounded border border-[var(--gb-border)] hover:bg-[var(--gb-surface)]"
@@ -358,10 +358,10 @@ export default function ChatClient({ userId }: { userId: string }) {
               onClick={() => selectChat(c.id)}
             >
               <div className="text-[13px] truncate">{c.title || "Untitled"}</div>
-              <div className="text-[10px] text-[color:var(--gb-subtle)]">{new Date(c.updatedAt).toLocaleString()}</div>
+              <div className="text-[10px] text-[var(--gb-subtle)]">{new Date(c.updatedAt).toLocaleString()}</div>
               <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition">
                 <button
-                  className="text-[10px] text-[color:var(--gb-subtle)] hover:opacity-80"
+                  className="text-[10px] text-[var(--gb-subtle)] hover:opacity-80"
                   onClick={(e) => { e.stopPropagation(); deleteChat(c.id); }}
                   title="Delete"
                 >
@@ -371,10 +371,10 @@ export default function ChatClient({ userId }: { userId: string }) {
             </div>
           ))}
           {conversations.length === 0 && (
-            <div className="text-xs text-[color:var(--gb-subtle)] px-2">No chats yet</div>
+            <div className="text-xs text-[var(--gb-subtle)] px-2">No chats yet</div>
           )}
         </div>
-        <div className="p-2 border-t border-[var(--gb-border)] text-[11px] text-[color:var(--gb-subtle)]">
+        <div className="p-2 border-t border-[var(--gb-border)] text-[11px] text-[var(--gb-subtle)]">
           Tip: ⌘K / Ctrl+K for new chat
         </div>
       </aside>
@@ -407,7 +407,7 @@ export default function ChatClient({ userId }: { userId: string }) {
 
         {/* Mobile drawer */}
         {sidebarOpen && (
-          <div className="md:hidden border-b border-[var(--gb-border)] bg-[color:var(--gb-bg)]/95">
+          <div className="md:hidden border-b border-[var(--gb-border)] bg-[var(--gb-bg)]">
             <div className="px-3 py-2 space-y-1">
               {conversations.map(c => (
                 <div
@@ -419,7 +419,7 @@ export default function ChatClient({ userId }: { userId: string }) {
                   onClick={() => { selectChat(c.id); }}
                 >
                   <div className="text-[13px] truncate">{c.title || "Untitled"}</div>
-                  <div className="text-[10px] text-[color:var(--gb-subtle)]">{new Date(c.updatedAt).toLocaleString()}</div>
+                  <div className="text-[10px] text-[var(--gb-subtle)]">{new Date(c.updatedAt).toLocaleString()}</div>
                 </div>
               ))}
               <div className="py-1">
@@ -450,19 +450,19 @@ export default function ChatClient({ userId }: { userId: string }) {
                 {sending && (
                   <div className="flex items-start gap-3">
                     <Avatar label="GB" color="emerald" />
-                    <div className="text-sm text-[color:var(--gb-subtle)] pt-1">Thinking…</div>
+                    <div className="text-sm text-[var(--gb-subtle)] pt-1">Thinking…</div>
                   </div>
                 )}
                 <div ref={bottomRef} />
               </>
             ) : (
-              <div className="text-sm text-[color:var(--gb-subtle)]">Loading…</div>
+              <div className="text-sm text-[var(--gb-subtle)]">Loading…</div>
             )}
           </div>
         </section>
 
         {/* Composer */}
-        <footer className="border-t border-[var(--gb-border)] bg-[color:var(--gb-bg)]/70 backdrop-blur">
+        <footer className="border-t border-[var(--gb-border)] bg-[var(--gb-bg)]">
           <div className="max-w-3xl mx-auto w-full px-4 py-3">
             <div className="rounded-xl bg-[var(--gb-bg)] border border-[var(--gb-border)] p-2">
               <textarea
@@ -471,13 +471,13 @@ export default function ChatClient({ userId }: { userId: string }) {
                 onKeyDown={onKeyDown}
                 rows={rows}
                 placeholder="Type a message…"
-                className="w-full resize-none bg-transparent outline-none text-sm leading-6 placeholder:text-[color:var(--gb-subtle)]"
+                className="w-full resize-none bg-transparent outline-none text-sm leading-6 placeholder:text-[var(--gb-subtle)]"
                 disabled={sending || !current}
               />
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => abortRef.current?.abort()}
+                  onClick={stop}
                   disabled={!sending}
                   className={clsx(
                     "inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs",
@@ -498,8 +498,8 @@ export default function ChatClient({ userId }: { userId: string }) {
                   className={clsx(
                     "inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs",
                     input.trim() && !sending
-                      ? "bg-[color:var(--gb-text)] text-[color:var(--gb-bg)] hover:opacity-90"
-                      : "bg-[var(--gb-surface)] text-[color:var(--gb-subtle)] cursor-not-allowed",
+                      ? "bg-[var(--gb-text)] text-[var(--gb-bg)] hover:opacity-90"
+                      : "bg-[var(--gb-surface)] text-[var(--gb-subtle)] cursor-not-allowed",
                   )}
                   title="Send"
                 >
@@ -508,7 +508,7 @@ export default function ChatClient({ userId }: { userId: string }) {
                 </button>
               </div>
             </div>
-            <p className="mt-2 text-[11px] text-[color:var(--gb-subtle)]">
+            <p className="mt-2 text-[11px] text-[var(--gb-subtle)]">
               Enter to send • Shift+Enter for newline • ⌘K / Ctrl+K for new chat
             </p>
           </div>
@@ -528,7 +528,7 @@ function buildWithDividers(
 
 function DayDivider({ label }: { label: string }) {
   return (
-    <div className="relative my-2 flex items-center justify-center text-[11px] text-[color:var(--gb-subtle)]">
+    <div className="relative my-2 flex items-center justify-center text-[11px] text-[var(--gb-subtle)]">
       <div className="w-full border-t border-[var(--gb-border)]" />
       <span className="absolute bg-[var(--gb-bg)] px-2">{label}</span>
     </div>
@@ -552,7 +552,7 @@ function ChatRow({ msg, you }: { msg: Msg; you: string }) {
         ) : (
           <MarkdownWithCopy content={msg.content} />
         )}
-        <div className="mt-1 text-[10px] text-[color:var(--gb-subtle)]">{timeLabel(msg.createdAt)}</div>
+        <div className="mt-1 text-[10px] text-[var(--gb-subtle)]">{timeLabel(msg.createdAt)}</div>
       </div>
       {isUser && <Avatar label={you} color="indigo" />}
     </div>
