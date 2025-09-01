@@ -55,3 +55,8 @@ body {
 .prose ul, .prose ol { margin: 0.5rem 0 0.75rem; }
 .prose code { background: transparent; font-family: var(--font-mono); }
 .prose li { margin: 0.25rem 0; }
+/* ---- TEMP FORCE BRAND PALETTE (can remove later) ---- */
+html, body, #__next, :root {
+  background-color: #111111 !important; /* Black */
+  color: #E5E5E5 !important;            /* Silver text */
+}
