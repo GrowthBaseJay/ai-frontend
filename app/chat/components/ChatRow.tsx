@@ -10,10 +10,9 @@ export default function ChatRow({ msg }: { msg: Msg; you: string }) {
   const isUser = msg.role === "user";
 
   if (isUser) {
-    // allow a bit more width with the new 1000px center
     return (
       <div className="flex w-full justify-end">
-        <div className="max-w-[95%] rounded-2xl border border-[color:var(--gb-border)]/70 bg-[color:var(--gb-surface-2)] px-3 py-2 text-[16px] leading-7 text-[color:var(--gb-text)]">
+        <div className="max-w-[900px] rounded-2xl border border-[color:var(--gb-border)]/70 bg-[color:var(--gb-surface-2)] px-3 py-2 text-[16px] leading-7 text-[color:var(--gb-text)]">
           <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
             {msg.content}
           </ReactMarkdown>
@@ -24,7 +23,7 @@ export default function ChatRow({ msg }: { msg: Msg; you: string }) {
 
   return (
     <div className="group relative w-full">
-      <div className="prose prose-invert max-w-[99%] text-[16px] leading-7 text-[color:var(--gb-text)]">
+      <div className="prose prose-invert max-w-[900px] mx-auto text-[16px] leading-7 text-[color:var(--gb-text)]">
         <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
           {msg.content}
         </ReactMarkdown>
