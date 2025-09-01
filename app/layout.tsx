@@ -37,8 +37,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {/* MAIN ROW */}
             <div className="relative flex min-h-0 flex-1">
               {/* FIXED SIDEBAR (lg+) */}
-              <Sidebar />
-
+             <Sidebar
+  currentId={null}
+  onSelect={() => {}}
+  onNewChat={() => {}}
+  onDelete={() => {}}
+/>
               {/* Spacer so content starts to the right of the fixed sidebar */}
               <div className="hidden w-72 shrink-0 lg:block" />
 
