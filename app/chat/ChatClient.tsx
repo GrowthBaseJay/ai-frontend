@@ -328,17 +328,17 @@ export default function ChatClient({ userId }: { userId: string }) {
   /* --------------------------------- Render -------------------------------- */
 
   return (
-    <div className="min-h-screen max-h-screen bg-black text-white flex">
+    <div className="min-h-screen max-h-screen bg-[var(--gb-bg)] text-[var(--gb-text)] flex">
       {/* Sidebar (hidden on small screens) */}
       <aside className={clsx(
-        "hidden md:flex md:flex-col w-64 border-r border-neutral-900 bg-black/60 backdrop-blur",
+        "hidden md:flex md:flex-col w-64 border-r border-[var(--gb-border)] bg-[color:var(--gb-bg)]/60 backdrop-blur",
         "shrink-0"
       )}>
-        <div className="h-12 px-3 flex items-center justify-between border-b border-neutral-900">
-          <div className="text-xs text-neutral-400">Conversations</div>
+        <div className="h-12 px-3 flex items-center justify-between border-b border-[var(--gb-border)]">
+          <div className="text-xs text-[color:var(--gb-subtle)]">Conversations</div>
           <button
             onClick={newChat}
-            className="text-xs px-2 py-1 rounded border border-neutral-800 hover:bg-neutral-900"
+            className="text-xs px-2 py-1 rounded border border-[var(--gb-border)] hover:bg-[var(--gb-surface)]"
             title="New chat (⌘K / Ctrl+K)"
           >
             <RotateCcw className="inline-block h-3.5 w-3.5 mr-1" />
@@ -352,16 +352,16 @@ export default function ChatClient({ userId }: { userId: string }) {
               className={clsx(
                 "group rounded-lg border px-2 py-2 cursor-pointer",
                 c.id === currentId
-                  ? "border-neutral-700 bg-neutral-900"
-                  : "border-neutral-900 hover:bg-neutral-950"
+                  ? "border-[var(--gb-border)] bg-[var(--gb-surface-2)]"
+                  : "border-[var(--gb-border)] hover:bg-[var(--gb-surface)]"
               )}
               onClick={() => selectChat(c.id)}
             >
               <div className="text-[13px] truncate">{c.title || "Untitled"}</div>
-              <div className="text-[10px] text-neutral-500">{new Date(c.updatedAt).toLocaleString()}</div>
+              <div className="text-[10px] text-[color:var(--gb-subtle)]">{new Date(c.updatedAt).toLocaleString()}</div>
               <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition">
                 <button
-                  className="text-[10px] text-neutral-400 hover:text-neutral-200"
+                  className="text-[10px] text-[color:var(--gb-subtle)] hover:opacity-80"
                   onClick={(e) => { e.stopPropagation(); deleteChat(c.id); }}
                   title="Delete"
                 >
@@ -371,10 +371,10 @@ export default function ChatClient({ userId }: { userId: string }) {
             </div>
           ))}
           {conversations.length === 0 && (
-            <div className="text-xs text-neutral-500 px-2">No chats yet</div>
+            <div className="text-xs text-[color:var(--gb-subtle)] px-2">No chats yet</div>
           )}
         </div>
-        <div className="p-2 border-t border-neutral-900 text-[11px] text-neutral-500">
+        <div className="p-2 border-t border-[var(--gb-border)] text-[11px] text-[color:var(--gb-subtle)]">
           Tip: ⌘K / Ctrl+K for new chat
         </div>
       </aside>
@@ -382,20 +382,20 @@ export default function ChatClient({ userId }: { userId: string }) {
       {/* Main column */}
       <main className="flex-1 min-w-0 flex flex-col">
         {/* Header */}
-        <header className="h-12 flex items-center justify-center border-b border-neutral-900">
+        <header className="h-12 flex items-center justify-center border-b border-[var(--gb-border)]">
           <div className="w-full max-w-3xl px-4 flex items-center justify-between">
             <div className="font-medium tracking-tight">GrowthBase AI</div>
             <div className="flex items-center gap-2">
               {/* mobile-only sidebar toggle */}
               <button
-                className="md:hidden text-xs px-2 py-1 rounded border border-neutral-800"
+                className="md:hidden text-xs px-2 py-1 rounded border border-[var(--gb-border)]"
                 onClick={() => setSidebarOpen(v => !v)}
               >
                 {sidebarOpen ? "Close" : "Chats"}
               </button>
               <button
                 onClick={newChat}
-                className="hidden md:inline-flex text-xs px-2 py-1 rounded border border-neutral-800 hover:bg-neutral-900"
+                className="hidden md:inline-flex text-xs px-2 py-1 rounded border border-[var(--gb-border)] hover:bg-[var(--gb-surface)]"
                 title="New chat (⌘K / Ctrl+K)"
               >
                 <RotateCcw className="inline-block h-3.5 w-3.5 mr-1" />
@@ -407,25 +407,25 @@ export default function ChatClient({ userId }: { userId: string }) {
 
         {/* Mobile drawer */}
         {sidebarOpen && (
-          <div className="md:hidden border-b border-neutral-900 bg-black/95">
+          <div className="md:hidden border-b border-[var(--gb-border)] bg-[color:var(--gb-bg)]/95">
             <div className="px-3 py-2 space-y-1">
               {conversations.map(c => (
                 <div
                   key={c.id}
                   className={clsx(
                     "rounded-lg border px-2 py-2",
-                    c.id === currentId ? "border-neutral-700 bg-neutral-900" : "border-neutral-900"
+                    c.id === currentId ? "border-[var(--gb-border)] bg-[var(--gb-surface-2)]" : "border-[var(--gb-border)]"
                   )}
                   onClick={() => { selectChat(c.id); }}
                 >
                   <div className="text-[13px] truncate">{c.title || "Untitled"}</div>
-                  <div className="text-[10px] text-neutral-500">{new Date(c.updatedAt).toLocaleString()}</div>
+                  <div className="text-[10px] text-[color:var(--gb-subtle)]">{new Date(c.updatedAt).toLocaleString()}</div>
                 </div>
               ))}
               <div className="py-1">
                 <button
                   onClick={newChat}
-                  className="text-xs px-2 py-1 rounded border border-neutral-800 hover:bg-neutral-900 w-full text-left"
+                  className="text-xs px-2 py-1 rounded border border-[var(--gb-border)] hover:bg-[var(--gb-surface)] w-full text-left"
                 >
                   <RotateCcw className="inline-block h-3.5 w-3.5 mr-1" />
                   New Chat
@@ -450,28 +450,28 @@ export default function ChatClient({ userId }: { userId: string }) {
                 {sending && (
                   <div className="flex items-start gap-3">
                     <Avatar label="GB" color="emerald" />
-                    <div className="text-sm text-neutral-400 pt-1">Thinking…</div>
+                    <div className="text-sm text-[color:var(--gb-subtle)] pt-1">Thinking…</div>
                   </div>
                 )}
                 <div ref={bottomRef} />
               </>
             ) : (
-              <div className="text-sm text-neutral-400">Loading…</div>
+              <div className="text-sm text-[color:var(--gb-subtle)]">Loading…</div>
             )}
           </div>
         </section>
 
         {/* Composer */}
-        <footer className="border-t border-neutral-900 bg-black/70 backdrop-blur">
+        <footer className="border-t border-[var(--gb-border)] bg-[color:var(--gb-bg)]/70 backdrop-blur">
           <div className="max-w-3xl mx-auto w-full px-4 py-3">
-            <div className="rounded-xl bg-neutral-950 border border-neutral-800 p-2">
+            <div className="rounded-xl bg-[var(--gb-bg)] border border-[var(--gb-border)] p-2">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onKeyDown}
                 rows={rows}
                 placeholder="Type a message…"
-                className="w-full resize-none bg-transparent outline-none text-sm leading-6 placeholder:text-neutral-500"
+                className="w-full resize-none bg-transparent outline-none text-sm leading-6 placeholder:text-[color:var(--gb-subtle)]"
                 disabled={sending || !current}
               />
               <div className="flex items-center justify-end gap-2 pt-2">
@@ -482,10 +482,11 @@ export default function ChatClient({ userId }: { userId: string }) {
                   className={clsx(
                     "inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs",
                     sending
-                      ? "border-neutral-700 text-neutral-200 hover:bg-neutral-900"
-                      : "border-neutral-900 text-neutral-600 cursor-not-allowed",
+                      ? "border-[var(--gb-border)]"
+                      : "border-[var(--gb-border)] opacity-60 cursor-not-allowed",
                   )}
                   title="Stop"
+                  style={{ color: "var(--gb-text)" }}
                 >
                   <StopCircle className="h-4 w-4" />
                   Stop
@@ -497,8 +498,8 @@ export default function ChatClient({ userId }: { userId: string }) {
                   className={clsx(
                     "inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs",
                     input.trim() && !sending
-                      ? "bg-white text-black hover:opacity-90"
-                      : "bg-neutral-800 text-neutral-400 cursor-not-allowed",
+                      ? "bg-[color:var(--gb-text)] text-[color:var(--gb-bg)] hover:opacity-90"
+                      : "bg-[var(--gb-surface)] text-[color:var(--gb-subtle)] cursor-not-allowed",
                   )}
                   title="Send"
                 >
@@ -507,7 +508,7 @@ export default function ChatClient({ userId }: { userId: string }) {
                 </button>
               </div>
             </div>
-            <p className="mt-2 text-[11px] text-neutral-500">
+            <p className="mt-2 text-[11px] text-[color:var(--gb-subtle)]">
               Enter to send • Shift+Enter for newline • ⌘K / Ctrl+K for new chat
             </p>
           </div>
@@ -527,9 +528,9 @@ function buildWithDividers(
 
 function DayDivider({ label }: { label: string }) {
   return (
-    <div className="relative my-2 flex items-center justify-center text-[11px] text-neutral-500">
-      <div className="w-full border-t border-neutral-900" />
-      <span className="absolute bg-black px-2">{label}</span>
+    <div className="relative my-2 flex items-center justify-center text-[11px] text-[color:var(--gb-subtle)]">
+      <div className="w-full border-t border-[var(--gb-border)]" />
+      <span className="absolute bg-[var(--gb-bg)] px-2">{label}</span>
     </div>
   );
 }
@@ -542,7 +543,7 @@ function ChatRow({ msg, you }: { msg: Msg; you: string }) {
       <div
         className={clsx(
           "max-w-[85%] md:max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-6",
-          isUser ? "bg-neutral-900" : "bg-neutral-800",
+          isUser ? "bg-[var(--gb-surface-2)] border border-[var(--gb-border)]" : "bg-[var(--gb-surface)]"
         )}
         style={{ overflowWrap: "anywhere" }}
       >
@@ -551,7 +552,7 @@ function ChatRow({ msg, you }: { msg: Msg; you: string }) {
         ) : (
           <MarkdownWithCopy content={msg.content} />
         )}
-        <div className="mt-1 text-[10px] text-neutral-400">{timeLabel(msg.createdAt)}</div>
+        <div className="mt-1 text-[10px] text-[color:var(--gb-subtle)]">{timeLabel(msg.createdAt)}</div>
       </div>
       {isUser && <Avatar label={you} color="indigo" />}
     </div>
@@ -586,7 +587,7 @@ function MarkdownWithCopy({ content }: { content: string }) {
       const text = String(children ?? "");
       if (inline) {
         return (
-          <code className="rounded bg-neutral-900 px-1 py-0.5" {...props}>
+          <code className="rounded px-1 py-0.5" style={{ background: "var(--gb-surface)" }} {...props}>
             {text}
           </code>
         );
@@ -596,13 +597,14 @@ function MarkdownWithCopy({ content }: { content: string }) {
           <button
             type="button"
             onClick={() => copyText(text)}
-            className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity text-[11px] inline-flex items-center gap-1 px-2 py-1 rounded bg-neutral-900 border border-neutral-700"
+            className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity text-[11px] inline-flex items-center gap-1 px-2 py-1 rounded border"
+            style={{ background: "var(--gb-surface-2)", borderColor: "var(--gb-border)", color: "var(--gb-text)" }}
             title="Copy code"
           >
             <Copy className="h-3.5 w-3.5" />
             Copy
           </button>
-          <pre className="overflow-x-auto rounded-lg border border-neutral-800 bg-neutral-950 p-3 text-[13px] leading-6">
+          <pre className="overflow-x-auto rounded-lg border p-3 text-[13px] leading-6" style={{ borderColor: "var(--gb-border)", background: "var(--gb-bg)" }}>
             <code className={className} {...props}>
               {text}
             </code>
@@ -618,10 +620,10 @@ function MarkdownWithCopy({ content }: { content: string }) {
       );
     },
     th({ children }) {
-      return <th className="border-b border-neutral-700 px-2 py-1 text-left">{children}</th>;
+      return <th className="border-b px-2 py-1 text-left" style={{ borderColor: "var(--gb-border)" }}>{children}</th>;
     },
     td({ children }) {
-      return <td className="border-b border-neutral-900 px-2 py-1">{children}</td>;
+      return <td className="border-b px-2 py-1" style={{ borderColor: "var(--gb-border)" }}>{children}</td>;
     },
   };
 
