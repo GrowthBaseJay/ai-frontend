@@ -2,90 +2,24 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import type { Components } from "react-markdown";
-import { Copy, StopCircle, SendHorizontal, RotateCcw } from "lucide-react";
+import { RotateCcw, StopCircle, SendHorizontal } from "lucide-react";
 
-/* ----------------------------- Types & utils ----------------------------- */
+import type { Conversation, Msg } from "./lib/types";
+import {
+  uid, now, initialsFrom, dayLabel, clsx, isAbortError,
+  loadConversations, saveConversations
+} from "./lib/utils";
 
-type Role = "user" | "assistant";
-type Msg = { id: string; role: Role; content: string; createdAt: number };
-
-type Conversation = {
-  id: string;
-  title: string;
-  createdAt: number;
-  updatedAt: number;
-  messages: Msg[];
-};
-
-function uid() {
-  return Math.random().toString(36).slice(2, 10);
-}
-function now() {
-  return Date.now();
-}
-function initialsFrom(name?: string | null): string {
-  if (!name) return "You";
-  const parts = name.trim().split(/\s+/).slice(0, 2);
-  return parts.map(p => p[0]?.toUpperCase() ?? "").join("") || "You";
-}
-function dayLabel(ts: number) {
-  const d = new Date(ts);
-  const t = new Date();
-  const sameDay = d.toDateString() === t.toDateString();
-  if (sameDay) return "Today";
-  const yesterday = new Date(t);
-  yesterday.setDate(t.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
-  return d.toLocaleDateString();
-}
-function timeLabel(ts: number) {
-  return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
-async function copyText(text: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {}
-}
-function clsx(...c: (string | false | null | undefined)[]) {
-  return c.filter(Boolean).join(" ");
-}
-function isAbortError(e: unknown): e is { name?: string } {
-  return typeof e === "object" && e !== null && "name" in e && (e as { name?: string }).name === "AbortError";
-}
-
-/* ------------------------------- Persistence ----------------------------- */
-
-const LS_KEY = "gb.chats.v1";
-
-function loadConversations(): Conversation[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Conversation[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveConversations(convs: Conversation[]) {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(LS_KEY, JSON.stringify(convs));
-  } catch {
-    // ignore quota errors for MVP
-  }
-}
+import ChatRow from "./components/ChatRow";
+import DayDivider from "./components/DayDivider";
+import Avatar from "./components/Avatar";
 
 /* --------------------------------- Page --------------------------------- */
 
 export default function ChatClient({ userId }: { userId: string }) {
   const { user } = useUser();
-  const you = initialsFrom(user?.fullName ?? user?.username ?? user?.primaryEmailAddress?.emailAddress);
+  const you =
+    initialsFrom(user?.fullName ?? user?.username ?? user?.primaryEmailAddress?.emailAddress);
 
   // conversations state
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -108,21 +42,27 @@ export default function ChatClient({ userId }: { userId: string }) {
         title: "New chat",
         createdAt: now(),
         updatedAt: now(),
-        messages: [{ id: uid(), role: "assistant", content: "Hey! I’m GrowthBase AI. How can I help?", createdAt: now() }],
+        messages: [
+          {
+            id: uid(),
+            role: "assistant",
+            content: "Hey! I’m GrowthBase AI. How can I help?",
+            createdAt: now(),
+          },
+        ],
       };
       setConversations([initial]);
       setCurrentId(initial.id);
       saveConversations([initial]);
     } else {
-      // sort by updatedAt desc
       convs.sort((a, b) => b.updatedAt - a.updatedAt);
       setConversations(convs);
       setCurrentId(convs[0].id);
     }
   }, []);
 
-  // autoscroll
-  const current = conversations.find(c => c.id === currentId);
+  // current chat + autoscroll
+  const current = conversations.find((c) => c.id === currentId);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [currentId, current?.messages.length, sending]);
@@ -152,13 +92,12 @@ export default function ChatClient({ userId }: { userId: string }) {
   }, [input]);
 
   function updateCurrent(updater: (c: Conversation) => Conversation) {
-    setConversations(prev => {
-      const idx = prev.findIndex(c => c.id === currentId);
+    setConversations((prev) => {
+      const idx = prev.findIndex((c) => c.id === currentId);
       if (idx === -1) return prev;
       const updated = updater(prev[idx]);
       const next = [...prev];
       next[idx] = { ...updated, updatedAt: now() };
-      // keep sorted by updatedAt desc
       next.sort((a, b) => b.updatedAt - a.updatedAt);
       return next;
     });
@@ -170,9 +109,11 @@ export default function ChatClient({ userId }: { userId: string }) {
       title: "New chat",
       createdAt: now(),
       updatedAt: now(),
-      messages: [{ id: uid(), role: "assistant", content: "New chat. How can I help?", createdAt: now() }],
+      messages: [
+        { id: uid(), role: "assistant", content: "New chat. How can I help?", createdAt: now() },
+      ],
     };
-    setConversations(prev => {
+    setConversations((prev) => {
       const next = [convo, ...prev];
       saveConversations(next);
       return next;
@@ -187,22 +128,23 @@ export default function ChatClient({ userId }: { userId: string }) {
   }
 
   function deleteChat(id: string) {
-    setConversations(prev => {
-      const next = prev.filter(c => c.id !== id);
+    setConversations((prev) => {
+      const next = prev.filter((c) => c.id !== id);
       if (next.length === 0) {
         const convo: Conversation = {
           id: uid(),
           title: "New chat",
           createdAt: now(),
           updatedAt: now(),
-          messages: [{ id: uid(), role: "assistant", content: "New chat. How can I help?", createdAt: now() }],
+          messages: [
+            { id: uid(), role: "assistant", content: "New chat. How can I help?", createdAt: now() },
+          ],
         };
         saveConversations([convo]);
         setCurrentId(convo.id);
         return [convo];
       }
       saveConversations(next);
-      // if we deleted current, switch to newest
       if (id === currentId) setCurrentId(next[0].id);
       return next;
     });
@@ -213,12 +155,11 @@ export default function ChatClient({ userId }: { userId: string }) {
     const text = input.trim();
     if (!text || sending) return;
 
-    // optimistic user msg
     const userMsg: Msg = { id: uid(), role: "user", content: text, createdAt: now() };
     setInput("");
-    updateCurrent(c => ({
+    updateCurrent((c) => ({
       ...c,
-      title: c.title === "New chat" ? (text.slice(0, 50) || "Untitled") : c.title,
+      title: c.title === "New chat" ? text.slice(0, 50) || "Untitled" : c.title,
       messages: [...c.messages, userMsg],
     }));
     setSending(true);
@@ -243,7 +184,10 @@ export default function ChatClient({ userId }: { userId: string }) {
 
       if (isSSE && hasBody) {
         const asstId = uid();
-        updateCurrent(c => ({ ...c, messages: [...c.messages, { id: asstId, role: "assistant", content: "", createdAt: now() }] }));
+        updateCurrent((c) => ({
+          ...c,
+          messages: [...c.messages, { id: asstId, role: "assistant", content: "", createdAt: now() }],
+        }));
 
         const reader = res.body!.getReader();
         const decoder = new TextDecoder();
@@ -253,15 +197,18 @@ export default function ChatClient({ userId }: { userId: string }) {
           done = chunk.done;
           const txt = decoder.decode(chunk.value || new Uint8Array(), { stream: !done });
           if (!txt) continue;
-          setConversations(prev =>
-            prev.map(conv => {
-              if (conv.id !== currentId) return conv;
-              return {
-                ...conv,
-                updatedAt: now(),
-                messages: conv.messages.map(m => m.id === asstId ? { ...m, content: m.content + txt } : m),
-              };
-            }),
+          setConversations((prev) =>
+            prev.map((conv) =>
+              conv.id !== currentId
+                ? conv
+                : {
+                    ...conv,
+                    updatedAt: now(),
+                    messages: conv.messages.map((m) =>
+                      m.id === asstId ? { ...m, content: m.content + txt } : m
+                    ),
+                  }
+            )
           );
         }
       } else {
@@ -269,29 +216,41 @@ export default function ChatClient({ userId }: { userId: string }) {
         const reply = (data && (data.reply || data.answer || data.output_text)) || "Sorry, I didn’t get that.";
 
         const asstId = uid();
-        updateCurrent(c => ({ ...c, messages: [...c.messages, { id: asstId, role: "assistant", content: "", createdAt: now() }] }));
+        updateCurrent((c) => ({
+          ...c,
+          messages: [...c.messages, { id: asstId, role: "assistant", content: "", createdAt: now() }],
+        }));
 
         const step = Math.max(1, Math.floor(reply.length / 60));
         for (let i = 0; i < reply.length; i += step) {
-          await new Promise(r => setTimeout(r, 16));
+          await new Promise((r) => setTimeout(r, 16));
           const slice = reply.slice(i, i + step);
-          setConversations(prev =>
-            prev.map(conv => {
-              if (conv.id !== currentId) return conv;
-              return {
-                ...conv,
-                updatedAt: now(),
-                messages: conv.messages.map(m => m.id === asstId ? { ...m, content: m.content + slice } : m),
-              };
-            }),
+          setConversations((prev) =>
+            prev.map((conv) =>
+              conv.id !== currentId
+                ? conv
+                : {
+                    ...conv,
+                    updatedAt: now(),
+                    messages: conv.messages.map((m) =>
+                      m.id === asstId ? { ...m, content: m.content + slice } : m
+                    ),
+                  }
+            )
           );
         }
       }
     } catch (err: unknown) {
       if (isAbortError(err)) {
-        updateCurrent(c => ({ ...c, messages: [...c.messages, { id: uid(), role: "assistant", content: "…stopped.", createdAt: now() }] }));
+        updateCurrent((c) => ({
+          ...c,
+          messages: [...c.messages, { id: uid(), role: "assistant", content: "…stopped.", createdAt: now() }],
+        }));
       } else {
-        updateCurrent(c => ({ ...c, messages: [...c.messages, { id: uid(), role: "assistant", content: "Network error contacting AI.", createdAt: now() }] }));
+        updateCurrent((c) => ({
+          ...c,
+          messages: [...c.messages, { id: uid(), role: "assistant", content: "Network error contacting AI.", createdAt: now() }],
+        }));
       }
     } finally {
       setSending(false);
@@ -310,8 +269,7 @@ export default function ChatClient({ userId }: { userId: string }) {
     abortRef.current?.abort();
   }
 
-  /* ---------- Build message list with day dividers for current chat ---------- */
-
+  /* ---------- Build message list with day dividers ---------- */
   const withDividers: (Msg | { divider: true; label: string; key: string })[] = [];
   if (current) {
     let lastDay = "";
@@ -330,10 +288,12 @@ export default function ChatClient({ userId }: { userId: string }) {
   return (
     <div className="min-h-screen max-h-screen bg-black text-white flex">
       {/* Sidebar (hidden on small screens) */}
-      <aside className={clsx(
-        "hidden md:flex md:flex-col w-64 border-r border-neutral-900 bg-black/60 backdrop-blur",
-        "shrink-0"
-      )}>
+      <aside
+        className={clsx(
+          "hidden md:flex md:flex-col w-64 border-r border-neutral-900 bg-black/60 backdrop-blur",
+          "shrink-0"
+        )}
+      >
         <div className="h-12 px-3 flex items-center justify-between border-b border-neutral-900">
           <div className="text-xs text-neutral-400">Conversations</div>
           <button
@@ -346,7 +306,7 @@ export default function ChatClient({ userId }: { userId: string }) {
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
-          {conversations.map(c => (
+          {conversations.map((c) => (
             <div
               key={c.id}
               className={clsx(
@@ -358,11 +318,16 @@ export default function ChatClient({ userId }: { userId: string }) {
               onClick={() => selectChat(c.id)}
             >
               <div className="text-[13px] truncate">{c.title || "Untitled"}</div>
-              <div className="text-[10px] text-neutral-500">{new Date(c.updatedAt).toLocaleString()}</div>
+              <div className="text-[10px] text-neutral-500">
+                {new Date(c.updatedAt).toLocaleString()}
+              </div>
               <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition">
                 <button
                   className="text-[10px] text-neutral-400 hover:text-neutral-200"
-                  onClick={(e) => { e.stopPropagation(); deleteChat(c.id); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteChat(c.id);
+                  }}
                   title="Delete"
                 >
                   Delete
@@ -389,7 +354,7 @@ export default function ChatClient({ userId }: { userId: string }) {
               {/* mobile-only sidebar toggle */}
               <button
                 className="md:hidden text-xs px-2 py-1 rounded border border-neutral-800"
-                onClick={() => setSidebarOpen(v => !v)}
+                onClick={() => setSidebarOpen((v) => !v)}
               >
                 {sidebarOpen ? "Close" : "Chats"}
               </button>
@@ -409,17 +374,21 @@ export default function ChatClient({ userId }: { userId: string }) {
         {sidebarOpen && (
           <div className="md:hidden border-b border-neutral-900 bg-black/95">
             <div className="px-3 py-2 space-y-1">
-              {conversations.map(c => (
+              {conversations.map((c) => (
                 <div
                   key={c.id}
                   className={clsx(
                     "rounded-lg border px-2 py-2",
                     c.id === currentId ? "border-neutral-700 bg-neutral-900" : "border-neutral-900"
                   )}
-                  onClick={() => { selectChat(c.id); }}
+                  onClick={() => {
+                    selectChat(c.id);
+                  }}
                 >
                   <div className="text-[13px] truncate">{c.title || "Untitled"}</div>
-                  <div className="text-[10px] text-neutral-500">{new Date(c.updatedAt).toLocaleString()}</div>
+                  <div className="text-[10px] text-neutral-500">
+                    {new Date(c.updatedAt).toLocaleString()}
+                  </div>
                 </div>
               ))}
               <div className="py-1">
@@ -440,11 +409,23 @@ export default function ChatClient({ userId }: { userId: string }) {
           <div className="max-w-3xl mx-auto w-full px-4 md:px-6 py-4 space-y-4">
             {current ? (
               <>
-                {buildWithDividers(withDividers).map(item =>
+                {(() => {
+                  const items: (Msg | { divider: true; label: string; key: string })[] = [];
+                  let lastDay = "";
+                  for (const m of current.messages) {
+                    const label = dayLabel(m.createdAt);
+                    if (label !== lastDay) {
+                      items.push({ divider: true, label, key: `div-${label}-${m.createdAt}` });
+                      lastDay = label;
+                    }
+                    items.push(m);
+                  }
+                  return items;
+                })().map((item) =>
                   "divider" in item ? (
                     <DayDivider key={item.key} label={item.label} />
                   ) : (
-                    <ChatRow key={item.id} you={initialsFrom(user?.fullName ?? user?.username ?? user?.primaryEmailAddress?.emailAddress)} msg={item} />
+                    <ChatRow key={item.id} you={you} msg={item} />
                   )
                 )}
                 {sending && (
@@ -477,13 +458,13 @@ export default function ChatClient({ userId }: { userId: string }) {
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => abortRef.current?.abort()}
+                  onClick={stop}
                   disabled={!sending}
                   className={clsx(
                     "inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border text-xs",
                     sending
                       ? "border-neutral-700 text-neutral-200 hover:bg-neutral-900"
-                      : "border-neutral-900 text-neutral-600 cursor-not-allowed",
+                      : "border-neutral-900 text-neutral-600 cursor-not-allowed"
                   )}
                   title="Stop"
                 >
@@ -492,13 +473,13 @@ export default function ChatClient({ userId }: { userId: string }) {
                 </button>
                 <button
                   type="button"
-                  onClick={send}
+                  onClick={async () => await send()}
                   disabled={!input.trim() || sending || !current}
                   className={clsx(
                     "inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs",
                     input.trim() && !sending
                       ? "bg-white text-black hover:opacity-90"
-                      : "bg-neutral-800 text-neutral-400 cursor-not-allowed",
+                      : "bg-neutral-800 text-neutral-400 cursor-not-allowed"
                   )}
                   title="Send"
                 >
@@ -514,120 +495,5 @@ export default function ChatClient({ userId }: { userId: string }) {
         </footer>
       </main>
     </div>
-  );
-}
-
-/* ------------------------------- Components ------------------------------ */
-
-function buildWithDividers(
-  items: (Msg | { divider: true; label: string; key: string })[]
-) {
-  return items;
-}
-
-function DayDivider({ label }: { label: string }) {
-  return (
-    <div className="relative my-2 flex items-center justify-center text-[11px] text-neutral-500">
-      <div className="w-full border-t border-neutral-900" />
-      <span className="absolute bg-black px-2">{label}</span>
-    </div>
-  );
-}
-
-function ChatRow({ msg, you }: { msg: Msg; you: string }) {
-  const isUser = msg.role === "user";
-  return (
-    <div className={clsx("flex items-start gap-3", isUser ? "justify-end" : "justify-start")}>
-      {!isUser && <Avatar label="GB" color="emerald" />}
-      <div
-        className={clsx(
-          "max-w-[85%] md:max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-6",
-          isUser ? "bg-neutral-900" : "bg-neutral-800",
-        )}
-        style={{ overflowWrap: "anywhere" }}
-      >
-        {isUser ? (
-          <div className="whitespace-pre-wrap">{msg.content}</div>
-        ) : (
-          <MarkdownWithCopy content={msg.content} />
-        )}
-        <div className="mt-1 text-[10px] text-neutral-400">{timeLabel(msg.createdAt)}</div>
-      </div>
-      {isUser && <Avatar label={you} color="indigo" />}
-    </div>
-  );
-}
-
-function Avatar({ label, color = "indigo" }: { label: string; color?: "indigo" | "emerald" | "neutral" }) {
-  const colorMap = {
-    indigo: "bg-indigo-600",
-    emerald: "bg-emerald-600",
-    neutral: "bg-neutral-600",
-  } as const;
-  return (
-    <div className={clsx("h-7 w-7 rounded-full grid place-items-center text-[11px] font-semibold", colorMap[color])}>
-      {label.slice(0, 2).toUpperCase()}
-    </div>
-  );
-}
-
-/* ---------- Markdown with typed overrides + copy on fenced code ---------- */
-
-type CodeProps =
-  React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
-    inline?: boolean;
-    className?: string;
-    children?: React.ReactNode;
-  };
-
-function MarkdownWithCopy({ content }: { content: string }) {
-  const components: Components = {
-    code({ inline, className, children, ...props }: CodeProps) {
-      const text = String(children ?? "");
-      if (inline) {
-        return (
-          <code className="rounded bg-neutral-900 px-1 py-0.5" {...props}>
-            {text}
-          </code>
-        );
-      }
-      return (
-        <div className="relative group">
-          <button
-            type="button"
-            onClick={() => copyText(text)}
-            className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity text-[11px] inline-flex items-center gap-1 px-2 py-1 rounded bg-neutral-900 border border-neutral-700"
-            title="Copy code"
-          >
-            <Copy className="h-3.5 w-3.5" />
-            Copy
-          </button>
-          <pre className="overflow-x-auto rounded-lg border border-neutral-800 bg-neutral-950 p-3 text-[13px] leading-6">
-            <code className={className} {...props}>
-              {text}
-            </code>
-          </pre>
-        </div>
-      );
-    },
-    table({ children }) {
-      return (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">{children}</table>
-        </div>
-      );
-    },
-    th({ children }) {
-      return <th className="border-b border-neutral-700 px-2 py-1 text-left">{children}</th>;
-    },
-    td({ children }) {
-      return <td className="border-b border-neutral-900 px-2 py-1">{children}</td>;
-    },
-  };
-
-  return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-      {content}
-    </ReactMarkdown>
   );
 }
