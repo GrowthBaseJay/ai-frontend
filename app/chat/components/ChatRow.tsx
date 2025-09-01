@@ -1,30 +1,36 @@
 "use client";
 
+import React from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Msg } from "../lib/types";
-import { clsx, timeLabel } from "../lib/utils";
-import Avatar from "./Avatar";
-import MarkdownWithCopy from "./MarkdownWithCopy";
 
+/**
+ * Clean, ChatGPT-like row:
+ * - assistant: left-aligned plain text block (no bubble, no avatar, no timestamp)
+ * - user: right-aligned subtle bubble (no timestamp)
+ * Brand colors come from CSS vars defined in globals.css.
+ */
 export default function ChatRow({ msg, you }: { msg: Msg; you: string }) {
   const isUser = msg.role === "user";
-  return (
-    <div className={clsx("flex items-start gap-3", isUser ? "justify-end" : "justify-start")}>
-      {!isUser && <Avatar label="GB" color="emerald" />}
-      <div
-        className={clsx(
-          "max-w-[85%] md:max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-6",
-          isUser ? "bg-neutral-900" : "bg-neutral-800",
-        )}
-        style={{ overflowWrap: "anywhere" }}
-      >
-        {isUser ? (
-          <div className="whitespace-pre-wrap">{msg.content}</div>
-        ) : (
-          <MarkdownWithCopy content={msg.content} />
-        )}
-        <div className="mt-1 text-[10px] text-neutral-400">{timeLabel(msg.createdAt)}</div>
+
+  if (isUser) {
+    // USER message → subtle right bubble
+    return (
+      <div className="flex w-full justify-end">
+        <div className="max-w-[80%] rounded-2xl border border-[color:var(--gb-border)]/70 bg-[color:var(--gb-surface-2)] px-3 py-2 text-[15px] leading-6 text-[color:var(--gb-text)]">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+        </div>
       </div>
-      {isUser && <Avatar label={you} color="indigo" />}
+    );
+  }
+
+  // ASSISTANT message → left-aligned plain text block (no bubble)
+  return (
+    <div className="w-full">
+      <div className="prose prose-invert max-w-none text-[15px] leading-7 text-[color:var(--gb-text)]">
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+      </div>
     </div>
   );
 }
