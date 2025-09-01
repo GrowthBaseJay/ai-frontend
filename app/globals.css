@@ -1,22 +1,26 @@
 @import "tailwindcss";
 
-/* ---------- Brand Tokens ---------- */
+/* ---------- GrowthBase brand tokens (dark-first) ---------- */
 :root {
-  /* Brand palette */
+  /* Core palette */
   --gb-bg: #111111;        /* Black */
-  --gb-text: #E5E5E5;      /* Silver Accent */
-  --gb-subtle: #CCCCCC;    /* Grey Accent */
+  --gb-text: #E5E5E5;      /* Main text */
+  --gb-subtle: #CCCCCC;    /* Subtext */
   --gb-accent: #C7AE6A;    /* Gold */
-  --gb-surface: #151515;
-  --gb-surface-2: #1b1b1b;
-  --gb-border: #222222;
-  /* Fallbacks / fonts */
+
+  /* Surfaces & borders used by ChatClient.tsx */
+  --gb-surface: #161616;   /* Cards / assistant bubble */
+  --gb-surface-2: #1b1b1b; /* User bubble / deeper surface */
+  --gb-border: #2a2a2a;    /* Hairlines */
+
+  /* Fallback aliases some components read */
   --background: var(--gb-bg);
   --foreground: var(--gb-text);
   --font-sans: var(--font-geist-sans, Arial, Helvetica, sans-serif);
-  --font-mono: var(--font-geist-mono, monospace);
+  --font-mono: var(--font-geist-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace);
 }
 
+/* We keep dark-first; no light override needed for now */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: var(--gb-bg);
@@ -24,7 +28,11 @@
   }
 }
 
-/* ---------- Base Typography ---------- */
+/* ---------- Base ---------- */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 body {
   background: var(--background);
   color: var(--foreground);
@@ -37,37 +45,13 @@ body {
 .subtle { color: var(--gb-subtle); }
 .accent { color: var(--gb-accent); }
 
-/* Smooth fonts */
-html {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+/* ---------- Scrollbars (desktop) ---------- */
+*::-webkit-scrollbar { height: 10px; width: 10px; }
+*::-webkit-scrollbar-thumb { background: var(--gb-border); border-radius: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
 
-/* ---------- Scrollbars ---------- */
-*::-webkit-scrollbar {
-  height: 10px;
-  width: 10px;
-}
-*::-webkit-scrollbar-thumb {
-  background: #2a2a2a;
-  border-radius: 8px;
-}
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* ---------- Chat Markdown Tweaks ---------- */
-.prose p {
-  margin: 0.5rem 0;
-}
-.prose ul,
-.prose ol {
-  margin: 0.5rem 0 0.75rem;
-}
-.prose code {
-  background: transparent;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
-}
-.prose li {
-  margin: 0.25rem 0;
-}
+/* ---------- Markdown tweaks ---------- */
+.prose p { margin: 0.5rem 0; }
+.prose ul, .prose ol { margin: 0.5rem 0 0.75rem; }
+.prose code { background: transparent; font-family: var(--font-mono); }
+.prose li { margin: 0.25rem 0; }
