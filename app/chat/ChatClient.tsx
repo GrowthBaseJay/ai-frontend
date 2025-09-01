@@ -20,11 +20,9 @@ export default function ChatClient({ userId }: { userId: string }) {
     user?.fullName ?? user?.username ?? user?.primaryEmailAddress?.emailAddress
   );
 
-  // conversations state
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentId, setCurrentId] = useState<string>("");
 
-  // UI state
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -59,13 +57,11 @@ export default function ChatClient({ userId }: { userId: string }) {
     }
   }, []);
 
-  // current chat + autoscroll
   const current = conversations.find((c) => c.id === currentId);
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [currentId, current?.messages.length, sending]);
 
-  // ⌘K / Ctrl+K new chat (kept)
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
@@ -79,7 +75,6 @@ export default function ChatClient({ userId }: { userId: string }) {
     return () => window.removeEventListener("keydown", handler);
   }, [conversations]);
 
-  // auto-save conversations
   useEffect(() => {
     if (conversations.length > 0) saveConversations(conversations);
   }, [conversations]);
@@ -253,11 +248,9 @@ export default function ChatClient({ userId }: { userId: string }) {
     }
   }
 
-  /* ------------------------------- RENDER ------------------------------- */
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {/* THREAD (only this scrolls) */}
+      {/* THREAD */}
       <section className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[760px] px-4 md:px-6 py-4 space-y-4">
           {current ? (
@@ -283,7 +276,7 @@ export default function ChatClient({ userId }: { userId: string }) {
         </div>
       </section>
 
-      {/* COMPOSER (fixed within content column) */}
+      {/* COMPOSER */}
       <footer className="border-t border-[color:var(--gb-border)]/60 bg-[var(--gb-bg)]">
         <div className="mx-auto w-full max-w-[760px] px-4 py-3">
           <div className="rounded-xl bg-[color:var(--gb-surface)] border border-[color:var(--gb-border)]/80 p-2">
@@ -329,8 +322,6 @@ export default function ChatClient({ userId }: { userId: string }) {
               </button>
             </div>
           </div>
-
-          {/* Removed helper tip text to keep it clean */}
         </div>
       </footer>
     </div>
