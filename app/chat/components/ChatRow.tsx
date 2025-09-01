@@ -53,7 +53,8 @@ export default function ChatRow({ msg }: { msg: Msg; you: string }) {
             </div>
           </div>
         ) : (
-          <div className="prose prose-invert max-w-none text-[12px] leading-4 text-[color:var(--gb-text)]">
+          // CHANGE: removed text-[12px] leading-4 so .prose heading/list styles apply
+          <div className="prose prose-invert max-w-none text-[color:var(--gb-text)]">
             <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
               {autoFormat(msg.content)}
             </ReactMarkdown>
