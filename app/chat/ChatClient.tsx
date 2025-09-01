@@ -29,7 +29,6 @@ export default function ChatClient({ userId }: { userId: string }) {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  // On mount: load convs (or create a default one)
   useEffect(() => {
     const convs = loadConversations();
     if (convs.length === 0) {
@@ -58,31 +57,22 @@ export default function ChatClient({ userId }: { userId: string }) {
   }, []);
 
   const current = conversations.find((c) => c.id === currentId);
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [currentId, current?.messages.length, sending]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); },
+    [currentId, current?.messages.length, sending]);
 
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
       const mod = isMac ? e.metaKey : e.ctrlKey;
-      if (mod && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        newChat();
-      }
+      if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); newChat(); }
     }
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [conversations]);
 
-  useEffect(() => {
-    if (conversations.length > 0) saveConversations(conversations);
-  }, [conversations]);
+  useEffect(() => { if (conversations.length > 0) saveConversations(conversations); }, [conversations]);
 
-  const rows = useMemo(() => {
-    const lines = input.split("\n").length;
-    return Math.max(1, Math.min(8, lines));
-  }, [input]);
+  const rows = useMemo(() => Math.max(1, Math.min(8, input.split("\n").length)), [input]);
 
   function updateCurrent(updater: (c: Conversation) => Conversation) {
     setConversations((prev) => {
@@ -106,11 +96,7 @@ export default function ChatClient({ userId }: { userId: string }) {
         { id: uid(), role: "assistant", content: "New chat. How can I help?", createdAt: now() },
       ],
     };
-    setConversations((prev) => {
-      const next = [convo, ...prev];
-      saveConversations(next);
-      return next;
-    });
+    setConversations((prev) => { const next = [convo, ...prev]; saveConversations(next); return next; });
     setCurrentId(convo.id);
     setInput("");
   }
@@ -133,8 +119,7 @@ export default function ChatClient({ userId }: { userId: string }) {
     const signal = abortRef.current.signal;
 
     try {
-      const streamUrl = "/api/dify-chat?stream=1";
-      const res = await fetch(streamUrl, {
+      const res = await fetch("/api/dify-chat?stream=1", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -224,15 +209,10 @@ export default function ChatClient({ userId }: { userId: string }) {
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      void send();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); }
   }
 
-  function stop() {
-    abortRef.current?.abort();
-  }
+  function stop() { abortRef.current?.abort(); }
 
   // Build message list with day dividers
   const items: (Msg | { divider: true; label: string; key: string })[] = [];
@@ -240,10 +220,7 @@ export default function ChatClient({ userId }: { userId: string }) {
     let lastDay = "";
     for (const m of current.messages) {
       const label = dayLabel(m.createdAt);
-      if (label !== lastDay) {
-        items.push({ divider: true, label, key: `div-${label}-${m.createdAt}` });
-        lastDay = label;
-      }
+      if (label !== lastDay) { items.push({ divider: true, label, key: `div-${label}-${m.createdAt}` }); lastDay = label; }
       items.push(m);
     }
   }
@@ -286,7 +263,7 @@ export default function ChatClient({ userId }: { userId: string }) {
               onKeyDown={onKeyDown}
               rows={rows}
               placeholder="Message GrowthBase AI"
-              className="w-full resize-none bg-transparent outline-none text-[15px] leading-6 placeholder:text-[color:var(--gb-subtle)] text-[color:var(--gb-text)]"
+              className="w-full resize-none bg-transparent outline-none text-[16px] leading-7 placeholder:text-[color:var(--gb-subtle)] text-[color:var(--gb-text)]"
               disabled={sending || !current}
             />
             <div className="flex items-center justify-end gap-2 pt-2">
