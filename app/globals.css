@@ -7,7 +7,9 @@
   --gb-text: #E5E5E5;      /* Silver Accent */
   --gb-subtle: #CCCCCC;    /* Grey Accent */
   --gb-accent: #C7AE6A;    /* Gold */
-
+  --gb-surface: #151515;
+  --gb-surface-2: #1b1b1b;
+  --gb-border: #222222;
   /* Fallbacks / fonts */
   --background: var(--gb-bg);
   --foreground: var(--gb-text);
