@@ -15,14 +15,14 @@ export default function ChatRow({ msg }: { msg: Msg; you: string }) {
       <div className="relative mx-auto w-full max-w-[950px]">
         {isUser ? (
           <div className="flex justify-end">
-            <div className="max-w-full rounded-2xl border border-[color:var(--gb-border)]/70 bg-[color:var(--gb-surface-2)] px-3 py-2 text-[14px] leading-6 text-[color:var(--gb-text)]">
+            <div className="max-w-full rounded-2xl border border-[color:var(--gb-border)]/70 bg-[color:var(--gb-surface-2)] px-3 py-2 text-[13px] leading-5 text-[color:var(--gb-text)]">
               <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
                 {msg.content}
               </ReactMarkdown>
             </div>
           </div>
         ) : (
-          <div className="prose prose-invert max-w-none text-[14px] leading-6 text-[color:var(--gb-text)]">
+          <div className="prose prose-invert max-w-none text-[13px] leading-5 text-[color:var(--gb-text)]">
             <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
               {msg.content}
             </ReactMarkdown>
