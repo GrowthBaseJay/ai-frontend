@@ -2,7 +2,6 @@ import { type Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Sidebar from "./chat/components/Sidebar";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -34,23 +33,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </header>
 
-            {/* MAIN ROW */}
-            <div className="relative flex min-h-0 flex-1">
-              {/* FIXED SIDEBAR (lg+) */}
-             <Sidebar
-  currentId={null}
-  onSelect={() => {}}
-  onNewChat={() => {}}
-  onDelete={() => {}}
-/>
-              {/* Spacer so content starts to the right of the fixed sidebar */}
-              <div className="hidden w-72 shrink-0 lg:block" />
-
-              {/* CONTENT COLUMN */}
-              <main className="flex min-w-0 flex-1 flex-col bg-[var(--gb-bg)]">
-                {children}
-              </main>
-            </div>
+            {/* CONTENT COLUMN (pages handle their own sidebar/layout if needed) */}
+            <main className="flex min-h-0 flex-1 flex-col bg-[var(--gb-bg)]">
+              {children}
+            </main>
           </div>
         </body>
       </html>
