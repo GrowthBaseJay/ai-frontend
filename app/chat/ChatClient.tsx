@@ -37,11 +37,29 @@ export default function ChatClient({ userId }: { userId: string }) {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  // model from localStorage (Sidebar writes it)
-  const model =
-    typeof window !== "undefined"
-      ? localStorage.getItem("gb-model") || "gpt-4o-mini"
-      : "gpt-4o-mini";
+  /* ----------------------- SSR-safe model selection ----------------------- */
+  // Default model; hydrate from localStorage on the client only and sync with ModelPicker.
+  const [model, setModel] = useState<string>("gpt-4o-mini");
+  useEffect(() => {
+    function hydrate() {
+      try {
+        const saved = window.localStorage.getItem("gb-model");
+        if (saved) setModel(saved);
+      } catch {
+        /* ignore */
+      }
+    }
+    hydrate();
+
+    // Listen for broadcasts from ModelPicker
+    const onModel = (e: Event) => {
+      const detail = (e as CustomEvent<string>).detail;
+      if (typeof detail === "string") setModel(detail);
+    };
+    window.addEventListener("gb:model", onModel as EventListener);
+    return () => window.removeEventListener("gb:model", onModel as EventListener);
+  }, []);
+  /* ----------------------------------------------------------------------- */
 
   // mount: load conversations
   useEffect(() => {
@@ -85,7 +103,7 @@ export default function ChatClient({ userId }: { userId: string }) {
     const el = threadRef.current;
     if (!el) return; // runtime guard
 
-    // create a non-null alias so TS narrows the type
+    // non-null alias for TS
     const target: HTMLDivElement = el;
 
     const onScroll = () => {
@@ -94,8 +112,7 @@ export default function ChatClient({ userId }: { userId: string }) {
       setShowJump(!nearBottom);
     };
 
-    // initialize state based on current position
-    onScroll();
+    onScroll(); // initialize once
 
     target.addEventListener("scroll", onScroll, {
       passive: true,
@@ -127,6 +144,7 @@ export default function ChatClient({ userId }: { userId: string }) {
     });
   }
 
+  // If you no longer call newChat() from UI, you can remove this to silence ESLint “unused” warnings.
   function newChat() {
     const convo: Conversation = {
       id: uid(),
@@ -172,7 +190,7 @@ export default function ChatClient({ userId }: { userId: string }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model, // pass model along
+          model, // pass the hydrated model
           messages: [...current.messages, userMsg].map(({ role, content }) => ({
             role,
             content,
