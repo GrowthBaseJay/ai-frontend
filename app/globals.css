@@ -1,71 +1,25 @@
 @import "tailwindcss";
 
-/* ---------------- GrowthBase brand tokens (dark-first) ---------------- */
-:root {
-  --gb-bg: #111111;
-  --gb-text: #E5E5E5;
-  --gb-subtle: #CCCCCC;
-  --gb-accent: #C7AE6A;
-
-  --gb-surface: #161616;
-  --gb-surface-2: #1b1b1b;
-  --gb-border: #2a2a2a;
-
-  --background: var(--gb-bg);
-  --foreground: var(--gb-text);
-  --font-sans: var(--font-geist-sans, Arial, Helvetica, sans-serif);
-  --font-mono: var(--font-geist-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace);
+:root{
+  --gb-bg:#111111; --gb-text:#E5E5E5; --gb-subtle:#CCCCCC; --gb-accent:#C7AE6A;
+  --gb-surface:#161616; --gb-surface-2:#1b1b1b; --gb-border:#2a2a2a;
+  --background:var(--gb-bg); --foreground:var(--gb-text);
+  --font-sans:var(--font-geist-sans,Arial,Helvetica,sans-serif);
+  --font-mono:var(--font-geist-mono,ui-monospace,Menlo,Consolas,monospace);
 }
+html,body{height:100%}
+html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{background:var(--background);color:var(--foreground);font-family:var(--font-sans);font-size:16px;line-height:1.65}
+:focus-visible{outline:2px solid var(--gb-accent);outline-offset:2px}
+*::-webkit-scrollbar{height:10px;width:10px}
+*::-webkit-scrollbar-thumb{background:var(--gb-border);border-radius:8px}
+*::-webkit-scrollbar-track{background:transparent}
 
-@media (prefers-color-scheme: dark) {
-  :root { --background: var(--gb-bg); --foreground: var(--gb-text); }
-}
-
-/* Base */
-html, body { height: 100%; }
-html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
-  font-size: 16px;
-  line-height: 1.65;
-}
-
-/* Content width utility (match ChatGPT-ish) */
-.gb-container { max-width: 700px; margin-inline: auto; padding-inline: 1rem; }
-
-/* Focus ring */
-:focus-visible { outline: 2px solid var(--gb-accent); outline-offset: 2px; }
-
-/* Selection */
-::selection { background: color-mix(in oklab, var(--gb-accent) 30%, #ffffff 0%); color: #000; }
-
-/* Scrollbars */
-*::-webkit-scrollbar { height: 10px; width: 10px; }
-*::-webkit-scrollbar-thumb { background: var(--gb-border); border-radius: 8px; }
-*::-webkit-scrollbar-track { background: transparent; }
-
-/* Prose (markdown) */
-.prose { font-size: 17px; line-height: 1.75; }
-.prose p { margin: 0.6rem 0; }
-.prose h1, .prose h2, .prose h3 { line-height: 1.25; margin: 1.2em 0 0.6em; font-weight: 600; }
-.prose h1 { font-size: 1.55rem; }
-.prose h2 { font-size: 1.32rem; }
-.prose h3 { font-size: 1.12rem; }
-.prose ul, .prose ol { margin: 0.4rem 0 0.8rem; padding-left: 1.15rem; }
-.prose li { margin: 0.25rem 0; }
-.prose strong { font-weight: 600; }
-.prose a { color: var(--gb-accent); text-decoration: none; }
-.prose a:hover { text-decoration: underline; }
-.prose pre {
-  background: var(--gb-surface-2);
-  border: 1px solid color-mix(in oklab, var(--gb-border) 80%, transparent);
-  border-radius: 12px;
-  padding: 0.9rem 1rem;
-  overflow: auto;
-}
-.prose code { font-family: var(--font-mono); font-size: 0.92em; background: transparent; }
-
-/* Guardrail */
-html, body, :root { background-color: var(--gb-bg) !important; color: var(--gb-text) !important; }
+/* Prose */
+.prose{font-size:17px;line-height:1.75}
+.prose h1,.prose h2,.prose h3{line-height:1.25;margin:1.2em 0 .6em;font-weight:600}
+.prose h1{font-size:1.55rem}.prose h2{font-size:1.32rem}.prose h3{font-size:1.12rem}
+.prose p{margin:.6rem 0}.prose ul,.prose ol{margin:.4rem 0 .8rem;padding-left:1.15rem}
+.prose li{margin:.25rem 0}
+.prose a{color:var(--gb-accent);text-decoration:none}.prose a:hover{text-decoration:underline}
+.prose code{font-family:var(--font-mono);font-size:.92em;background:transparent}
