@@ -38,12 +38,7 @@ export default function ChatClient({ userId }: { userId: string }) {
         createdAt: now(),
         updatedAt: now(),
         messages: [
-          {
-            id: uid(),
-            role: "assistant",
-            content: "Hey! I’m GrowthBase AI. How can I help?",
-            createdAt: now(),
-          },
+          { id: uid(), role: "assistant", content: "Hey! I’m GrowthBase AI. How can I help?", createdAt: now() },
         ],
       };
       setConversations([initial]);
@@ -226,10 +221,10 @@ export default function ChatClient({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      {/* THREAD */}
-      <section className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[760px] px-4 md:px-6 py-4 space-y-4">
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      {/* THREAD (add bottom padding so sticky composer never covers last msg) */}
+      <section className="flex-1 overflow-y-auto pb-28">
+        <div className="mx-auto w-full max-w-[700px] px-4 md:px-6 py-4 space-y-4">
           {current ? (
             <>
               {items.map((item) =>
@@ -253,9 +248,9 @@ export default function ChatClient({ userId }: { userId: string }) {
         </div>
       </section>
 
-      {/* COMPOSER */}
-      <footer className="border-t border-[color:var(--gb-border)]/60 bg-[var(--gb-bg)]">
-        <div className="mx-auto w-full max-w-[760px] px-4 py-3">
+      {/* COMPOSER (sticky bottom) */}
+      <footer className="sticky bottom-0 border-t border-[color:var(--gb-border)]/60 bg-[var(--gb-bg)]">
+        <div className="mx-auto w-full max-w-[700px] px-4 py-3">
           <div className="rounded-xl bg-[color:var(--gb-surface)] border border-[color:var(--gb-border)]/80 p-2">
             <textarea
               value={input}
