@@ -7,7 +7,7 @@ export default async function ChatPage() {
   if (!userId) redirect("/sign-in");
 
   return (
-    <div className="mx-auto w-full max-w-[900px] px-4 py-4">
+    <div className="mx-auto w-full max-w-[1000px] px-4 py-4">
       <ChatClient userId={userId} />
     </div>
   );
