@@ -12,7 +12,7 @@ export default function ChatRow({ msg }: { msg: Msg; you: string }) {
   // Outer row takes full thread width; inner column is centered & fixed width
   return (
     <div className="group w-full">
-      <div className="relative mx-auto w-full max-w-[980px]">
+      <div className="relative mx-auto w-full max-w-[950px]">
         {isUser ? (
           <div className="flex justify-end">
             <div className="max-w-full rounded-2xl border border-[color:var(--gb-border)]/70 bg-[color:var(--gb-surface-2)] px-3 py-2 text-[16px] leading-7 text-[color:var(--gb-text)]">
